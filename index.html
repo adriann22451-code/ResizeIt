@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ResizeIt</title>
+<meta name="application-name" content="ResizeIt">
+<meta name="apple-mobile-web-app-title" content="ResizeIt">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#E9DFF3">
+<style>
+:root{--bg:#E9DFF3;--bg2:#F6EADC;--card:#F6EFE2;--ink:#2E2547;--mut:#6A5F82;--acc:#E99A12;--accd:#A86400;--line:#2E2547;--chip:#EADFCB;--ok:#2F7D4F;--err:#B3402F;
+ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#241D38;--bg2:#2E2547;--card:#342B4D;--ink:#F1E9FA;--mut:#B3A8CC;--accd:#F5B84A;--line:#0F0B1A;--chip:#41375A;--ok:#6FD39A;--err:#FF8F7E}}
+:root[data-theme="dark"]{--bg:#241D38;--bg2:#2E2547;--card:#342B4D;--ink:#F1E9FA;--mut:#B3A8CC;--accd:#F5B84A;--line:#0F0B1A;--chip:#41375A;--ok:#6FD39A;--err:#FF8F7E}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);background-image:linear-gradient(180deg,var(--bg2),var(--bg));color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:18px 16px 40px}
+h1{font-size:20px;margin:4px 0 2px;letter-spacing:.3px}
+.sub{color:var(--mut);margin:0 0 16px;font-size:13px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:4px 4px 0 var(--line)}
+.card h2{font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
+.drop{display:flex;flex-direction:column;align-items:center;gap:6px;padding:22px 10px;border:2px dashed var(--mut);border-radius:12px;text-align:center;cursor:pointer;color:var(--mut)}
+.drop b{color:var(--ink);font-size:16px}
+input[type=file]{display:none}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.info div{background:var(--chip);border-radius:10px;padding:8px;text-align:center}
+.info small{display:block;color:var(--mut);font-size:11px}
+.info strong{font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);background:var(--chip);color:var(--ink);border-radius:10px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--acc);color:#2E2547}
+.chip:disabled{opacity:.4;cursor:not-allowed}
+.hint{color:var(--mut);font-size:12px;margin:8px 0 0}
+.btn{width:100%;border:2px solid var(--line);background:var(--acc);color:#2E2547;border-radius:12px;padding:14px;font:inherit;font-weight:800;letter-spacing:.8px;text-transform:uppercase;box-shadow:3px 3px 0 var(--line);cursor:pointer}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.alt{background:var(--chip);color:var(--ink)}
+.bar{height:14px;border:2px solid var(--line);border-radius:8px;background:var(--chip);overflow:hidden;margin:10px 0 6px}
+.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.row{display:flex;justify-content:space-between;color:var(--mut);font-size:13px;gap:8px}
+video.pv{width:100%;max-height:260px;border-radius:10px;background:#000;margin-top:10px}
+.msg{margin:10px 0 0;font-size:13px}.ok{color:var(--ok)}.err{color:var(--err)}
+.hide{display:none!important}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.stats span{background:var(--chip);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <h1>ResizeIt</h1>
+  <p class="sub">Ubah resolusi video langsung di HP. File tidak diunggah ke mana pun.</p>
+
+  <section class="card">
+    <h2>1 · Pilih video</h2>
+    <label class="drop" for="file"><b id="dropT">Ketuk untuk pilih video</b><span id="dropS">MP4, MOV, WebM, dan format lain yang didukung browser</span></label>
+    <input id="file" type="file" accept="video/*">
+    <div class="info hide" id="info">
+      <div><small>Resolusi</small><strong id="iRes">-</strong></div>
+      <div><small>Durasi</small><strong id="iDur">-</strong></div>
+      <div><small>Ukuran</small><strong id="iSize">-</strong></div>
+    </div>
+  </section>
+
+  <section class="card" id="setCard" style="opacity:.5;pointer-events:none">
+    <h2>2 · Resolusi tujuan</h2>
+    <div class="chips" id="resChips"></div>
+    <h2 style="margin-top:16px">Kualitas</h2>
+    <div class="chips" id="qChips">
+      <button class="chip" data-q="0.05" aria-pressed="false">Hemat</button>
+      <button class="chip" data-q="0.09" aria-pressed="true">Seimbang</button>
+      <button class="chip" data-q="0.14" aria-pressed="false">Tinggi</button>
+    </div>
+    <p class="hint" id="outHint">Rasio gambar tetap terjaga.</p>
+  </section>
+
+  <button class="btn" id="go" disabled>Konversi</button>
+
+  <section class="card hide" id="progCard" style="margin-top:14px">
+    <h2>Memproses</h2>
+    <div class="bar"><i id="fill"></i></div>
+    <div class="row"><span id="pTxt">0%</span><span id="pTime">0:00</span></div>
+    <p class="hint">Proses berjalan sebesar durasi video (real-time). Tetap buka halaman ini dan jangan kunci layar.</p>
+    <button class="btn alt" id="stop" style="margin-top:10px">Batalkan</button>
+  </section>
+
+  <section class="card hide" id="resCard" style="margin-top:14px">
+    <h2>Hasil</h2>
+    <video class="pv" id="pv" controls playsinline></video>
+    <div class="stats" id="stats"></div>
+    <button class="btn" id="save" style="margin-top:12px">Simpan video</button>
+    <p class="msg" id="msg"></p>
+  </section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const PRESETS=[240,360,480,720,1080,1440,2160];
+let file,srcUrl,meta=null,targetH=null,bpp=0.09,job=null,outBlob=null,outName='';
+
+const fmtSize=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+const fmtTime=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+
+$('file').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  file=f; if(srcUrl) URL.revokeObjectURL(srcUrl);
+  srcUrl=URL.createObjectURL(f);
+  const v=document.createElement('video'); v.preload='metadata'; v.muted=true; v.src=srcUrl;
+  v.onloadedmetadata=()=>{
+    meta={w:v.videoWidth,h:v.videoHeight,d:v.duration};
+    $('dropT').textContent=f.name; $('dropS').textContent='Ketuk untuk ganti video';
+    $('iRes').textContent=meta.w+'×'+meta.h; $('iDur').textContent=fmtTime(meta.d); $('iSize').textContent=fmtSize(f.size);
+    $('info').classList.remove('hide'); buildRes(); resetResult();
+  };
+  v.onerror=()=>{$('dropT').textContent='Video tidak bisa dibaca browser ini'};
+});
+
+function buildRes(){
+  const box=$('resChips'); box.textContent='';
+  let opts=PRESETS.filter(h=>h<meta.h);
+  if(!opts.length) opts=[Math.max(144,Math.round(meta.h/2/2)*2)];
+  targetH=opts.includes(720)?720:opts[opts.length-1];
+  opts.forEach(h=>{
+    const b=document.createElement('button'); b.className='chip'; b.textContent=h+'p'; b.dataset.h=h;
+    b.setAttribute('aria-pressed',h===targetH); box.appendChild(b);
+  });
+  $('setCard').style.cssText=''; $('go').disabled=false; updHint();
+}
+$('resChips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return;
+  targetH=+b.dataset.h; [...$('resChips').children].forEach(c=>c.setAttribute('aria-pressed',c===b)); updHint();});
+$('qChips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return;
+  bpp=+b.dataset.q; [...$('qChips').children].forEach(c=>c.setAttribute('aria-pressed',c===b)); updHint();});
+function dims(){const H=Math.round(targetH/2)*2; const W=Math.round(meta.w/meta.h*H/2)*2; return {W,H}}
+function updHint(){const {W,H}=dims(); const br=Math.round(W*H*30*bpp/1000);
+  $('outHint').textContent='Hasil: '+W+'×'+H+' · ± '+br+' kbps · rasio gambar tetap terjaga.';}
+
+function pickMime(){
+  const c=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  return c.find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t))||'';
+}
+function resetResult(){$('resCard').classList.add('hide'); $('progCard').classList.add('hide'); outBlob=null;}
+
+$('go').addEventListener('click',async()=>{
+  if(!meta) return;
+  if(!window.MediaRecorder){alert('Browser ini belum mendukung konversi video.'); return;}
+  resetResult(); const {W,H}=dims(); const mime=pickMime();
+  const v=document.createElement('video'); v.playsInline=true; v.src=srcUrl; v.preload='auto';
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
+  const stream=cv.captureStream(30); let ac=null;
+  try{ ac=new (window.AudioContext||window.webkitAudioContext)(); await ac.resume();
+    const s=ac.createMediaElementSource(v), d=ac.createMediaStreamDestination(); s.connect(d);
+    d.stream.getAudioTracks().forEach(t=>stream.addTrack(t)); }catch(_){}
+  const rec=new MediaRecorder(stream,{mimeType:mime||undefined,videoBitsPerSecond:Math.max(150000,Math.round(W*H*30*bpp)),audioBitsPerSecond:128000});
+  const chunks=[]; rec.ondataavailable=e=>{if(e.data.size) chunks.push(e.data)};
+  let done=false,cancelled=false,wake=null;
+  try{wake=await navigator.wakeLock?.request('screen')}catch(_){}
+  job={cancel(){cancelled=true; end();}};
+  const end=()=>{ if(done) return; done=true; try{v.pause()}catch(_){} if(rec.state!=='inactive') rec.stop(); };
+  rec.onstop=()=>{
+    wake?.release?.().catch(()=>{}); ac?.close?.(); $('progCard').classList.add('hide'); $('go').disabled=false;
+    if(cancelled||!chunks.length) return;
+    const type=(mime||'video/webm').split(';')[0]; const ext=type.includes('mp4')?'mp4':'webm';
+    outBlob=new Blob(chunks,{type}); outName=file.name.replace(/\.[^.]+$/,'')+'_'+H+'p.'+ext; showResult(W,H,ext);
+  };
+  const tick=()=>{ if(done) return; ctx.drawImage(v,0,0,W,H);
+    const p=v.duration?Math.min(100,v.currentTime/v.duration*100):0;
+    $('fill').style.width=p+'%'; $('pTxt').textContent=Math.floor(p)+'%'; $('pTime').textContent=fmtTime(v.currentTime)+' / '+fmtTime(v.duration);
+    (v.requestVideoFrameCallback?v.requestVideoFrameCallback.bind(v):requestAnimationFrame)(tick); };
+  v.onended=end; v.onerror=()=>{cancelled=true; end(); alert('Gagal memutar video untuk diproses.');};
+  $('go').disabled=true; $('progCard').classList.remove('hide'); $('fill').style.width='0';
+  rec.start(1000);
+  try{ await v.play(); tick(); }catch(err){ cancelled=true; end(); alert('Browser memblokir pemutaran. Coba ketuk Konversi lagi.'); }
+});
+$('stop').addEventListener('click',()=>job&&job.cancel());
+
+function showResult(W,H,ext){
+  const pv=$('pv'); pv.src=URL.createObjectURL(outBlob);
+  const diff=Math.round((1-outBlob.size/file.size)*100);
+  const st=$('stats'); st.textContent='';
+  [W+'×'+H,fmtSize(outBlob.size),(diff>=0?'−'+diff+'%':'+'+(-diff)+'%')+' ukuran',ext.toUpperCase()].forEach(t=>{const s=document.createElement('span'); s.textContent=t; st.appendChild(s);});
+  $('msg').textContent=''; $('resCard').classList.remove('hide'); $('resCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+$('save').addEventListener('click',async()=>{
+  const m=$('msg'); m.className='msg';
+  // 1) Di dalam claude.ai: pakai fitur downloads bawaan.
+  try{
+    if(typeof claude!=='undefined'){
+      const dl=await claude.use('downloads');
+      if(dl){ await dl.save({filename:outName,data:outBlob}); m.className='msg ok'; m.textContent='Tersimpan: '+outName; return; }
+    }
+  }catch(e){ if(e&&e.code==='declined') return; }
+  // 2) Di luar claude.ai (mis. GitHub Pages): unduh biasa lewat tautan.
+  const a=document.createElement('a'); a.href=URL.createObjectURL(outBlob); a.download=outName;
+  document.body.appendChild(a); a.click(); a.remove();
+  m.className='msg ok'; m.textContent='Mengunduh: '+outName;
+});
+</script>
+</body>
+</html>
