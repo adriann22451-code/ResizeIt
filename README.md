@@ -17,6 +17,16 @@ Ada dua cara pakai:
 2. Pilih video, lalu pilih resolusi tujuan dan kualitas.
 3. Ketuk **Konversi**, tunggu selesai, lalu **Simpan video**.
 
+Fitur:
+- **Resolusi tujuan** 240p sampai 2160p dengan rasio gambar tetap terjaga.
+- **Kualitas** Hemat, Seimbang, atau Tinggi.
+- **Target ukuran file** (8, 16, 25, atau 50 MB) untuk batas kirim chat atau email.
+- **Potong durasi** dengan mengisi detik mulai dan selesai.
+- **FPS** 24, 30, atau 60 dan opsi **hilangkan suara**.
+- **Putar video** 90° kanan, 180°, atau 90° kiri.
+- **Konversi banyak video sekaligus**: pilih beberapa file, semua memakai pengaturan yang sama dan diproses satu per satu.
+- **Perkiraan ukuran** hasil ditampilkan sebelum konversi.
+
 Tips:
 - Jangan pindah aplikasi atau kunci layar saat proses berjalan.
 - Hasil berformat MP4 jika didukung browser, selain itu WebM.

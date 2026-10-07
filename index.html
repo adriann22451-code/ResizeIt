@@ -43,6 +43,14 @@ input[type=file]{display:none}
 .row{display:flex;justify-content:space-between;color:var(--mut);font-size:13px;gap:8px}
 video.pv{width:100%;max-height:260px;border-radius:10px;background:#000;margin-top:10px}
 .msg{margin:10px 0 0;font-size:13px}.ok{color:var(--ok)}.err{color:var(--err)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.two label{font-size:12px;color:var(--mut)}
+.two input{width:100%;margin-top:4px;padding:10px;border:2px solid var(--line);border-radius:10px;background:var(--chip);color:var(--ink);font:inherit}
+.chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:600}
+.chk input{width:18px;height:18px;accent-color:var(--acc)}
+.li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--chip)}
+.li span{font-size:13px;overflow-wrap:anywhere}
+.li .btn{width:auto;padding:8px 12px;box-shadow:2px 2px 0 var(--line)}
 .hide{display:none!important}
 .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .stats span{background:var(--chip);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600}
@@ -55,8 +63,8 @@ video.pv{width:100%;max-height:260px;border-radius:10px;background:#000;margin-t
 
   <section class="card">
     <h2>1 · Pilih video</h2>
-    <label class="drop" for="file"><b id="dropT">Ketuk untuk pilih video</b><span id="dropS">MP4, MOV, WebM, dan format lain yang didukung browser</span></label>
-    <input id="file" type="file" accept="video/*">
+    <label class="drop" for="file"><b id="dropT">Ketuk untuk pilih video (boleh banyak)</b><span id="dropS">MP4, MOV, WebM, dan format lain yang didukung browser</span></label>
+    <input id="file" type="file" accept="video/*" multiple>
     <div class="info hide" id="info">
       <div><small>Resolusi</small><strong id="iRes">-</strong></div>
       <div><small>Durasi</small><strong id="iDur">-</strong></div>
@@ -73,6 +81,34 @@ video.pv{width:100%;max-height:260px;border-radius:10px;background:#000;margin-t
       <button class="chip" data-q="0.09" aria-pressed="true">Seimbang</button>
       <button class="chip" data-q="0.14" aria-pressed="false">Tinggi</button>
     </div>
+    <h2 style="margin-top:16px">Target ukuran file</h2>
+    <div class="chips" id="sChips">
+      <button class="chip" data-mb="0" aria-pressed="true">Otomatis</button>
+      <button class="chip" data-mb="8" aria-pressed="false">8 MB</button>
+      <button class="chip" data-mb="16" aria-pressed="false">16 MB</button>
+      <button class="chip" data-mb="25" aria-pressed="false">25 MB</button>
+      <button class="chip" data-mb="50" aria-pressed="false">50 MB</button>
+    </div>
+    <h2 style="margin-top:16px">Potong durasi (detik)</h2>
+    <p class="hint" id="tNote" style="margin:0 0 8px"></p>
+    <div class="two">
+      <label>Mulai<input id="tStart" type="number" min="0" step="0.1" value="0" inputmode="decimal"></label>
+      <label>Selesai<input id="tEnd" type="number" min="0" step="0.1" inputmode="decimal"></label>
+    </div>
+    <h2 style="margin-top:16px">Putar video</h2>
+    <div class="chips" id="rChips">
+      <button class="chip" data-r="0" aria-pressed="true">Normal</button>
+      <button class="chip" data-r="90" aria-pressed="false">90° kanan</button>
+      <button class="chip" data-r="180" aria-pressed="false">180°</button>
+      <button class="chip" data-r="270" aria-pressed="false">90° kiri</button>
+    </div>
+    <h2 style="margin-top:16px">Lainnya</h2>
+    <div class="chips" id="fChips">
+      <button class="chip" data-f="24" aria-pressed="false">24 fps</button>
+      <button class="chip" data-f="30" aria-pressed="true">30 fps</button>
+      <button class="chip" data-f="60" aria-pressed="false">60 fps</button>
+    </div>
+    <label class="chk"><input type="checkbox" id="mute"> Hilangkan suara</label>
     <p class="hint" id="outHint">Rasio gambar tetap terjaga.</p>
   </section>
 
@@ -80,6 +116,7 @@ video.pv{width:100%;max-height:260px;border-radius:10px;background:#000;margin-t
 
   <section class="card hide" id="progCard" style="margin-top:14px">
     <h2>Memproses</h2>
+    <p class="hint" id="pWho" style="margin:0"></p>
     <div class="bar"><i id="fill"></i></div>
     <div class="row"><span id="pTxt">0%</span><span id="pTime">0:00</span></div>
     <p class="hint">Proses berjalan sebesar durasi video (real-time). Tetap buka halaman ini dan jangan kunci layar.</p>
@@ -90,7 +127,10 @@ video.pv{width:100%;max-height:260px;border-radius:10px;background:#000;margin-t
     <h2>Hasil</h2>
     <video class="pv" id="pv" controls playsinline></video>
     <div class="stats" id="stats"></div>
+    <div id="list"></div>
+    <button class="btn hide" id="saveAll" style="margin-top:12px">Simpan semua</button>
     <button class="btn" id="save" style="margin-top:12px">Simpan video</button>
+    <button class="btn alt" id="again" style="margin-top:10px">Konversi video lain</button>
     <p class="msg" id="msg"></p>
   </section>
 </main>
@@ -98,104 +138,143 @@ video.pv{width:100%;max-height:260px;border-radius:10px;background:#000;margin-t
 <script>
 const $=id=>document.getElementById(id);
 const PRESETS=[240,360,480,720,1080,1440,2160];
-let file,srcUrl,meta=null,targetH=null,bpp=0.09,job=null,outBlob=null,outName='';
-
+let items=[],targetH=null,bpp=0.09,fps=30,targetMB=0,rot=0,job=null,cancelAll=false,results=[];
 const fmtSize=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
 const fmtTime=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const once=(el,ev)=>new Promise(r=>el.addEventListener(ev,r,{once:true}));
+const even=n=>Math.max(2,Math.round(n/2)*2);
+const eff=m=>rot%180?{w:m.h,h:m.w,d:m.d}:m;
 
-$('file').addEventListener('change',e=>{
-  const f=e.target.files[0]; if(!f) return;
-  file=f; if(srcUrl) URL.revokeObjectURL(srcUrl);
-  srcUrl=URL.createObjectURL(f);
-  const v=document.createElement('video'); v.preload='metadata'; v.muted=true; v.src=srcUrl;
-  v.onloadedmetadata=()=>{
-    meta={w:v.videoWidth,h:v.videoHeight,d:v.duration};
-    $('dropT').textContent=f.name; $('dropS').textContent='Ketuk untuk ganti video';
-    $('iRes').textContent=meta.w+'×'+meta.h; $('iDur').textContent=fmtTime(meta.d); $('iSize').textContent=fmtSize(f.size);
-    $('info').classList.remove('hide'); buildRes(); resetResult();
-  };
-  v.onerror=()=>{$('dropT').textContent='Video tidak bisa dibaca browser ini'};
+function group(id,pick){const box=$(id);
+  box.addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b||b.disabled||(!items.length&&id==='resChips')) return;
+    [...box.children].forEach(c=>c.setAttribute('aria-pressed',c===b)); pick(b); updHint();});}
+group('resChips',b=>targetH=+b.dataset.h);
+group('qChips',b=>bpp=+b.dataset.q);
+group('sChips',b=>{targetMB=+b.dataset.mb; $('qChips').style.opacity=targetMB?.4:1;});
+group('fChips',b=>fps=+b.dataset.f);
+group('rChips',b=>{rot=+b.dataset.r; if(items.length) buildRes();});
+['tStart','tEnd','mute'].forEach(id=>$(id).addEventListener('input',()=>items.length&&updHint()));
+
+function probe(url){return new Promise((res,rej)=>{const v=document.createElement('video');v.preload='metadata';v.muted=true;v.src=url;
+  v.onloadedmetadata=()=>res({w:v.videoWidth,h:v.videoHeight,d:v.duration});v.onerror=rej;});}
+
+$('file').addEventListener('change',async e=>{
+  const fl=[...e.target.files]; if(!fl.length) return;
+  items.forEach(i=>URL.revokeObjectURL(i.url)); items=[];
+  for(const f of fl){const url=URL.createObjectURL(f); try{items.push({file:f,url,meta:await probe(url)});}catch(_){URL.revokeObjectURL(url);}}
+  if(!items.length){$('dropT').textContent='Video tidak bisa dibaca browser ini'; return;}
+  const one=items.length===1, m=items[0].meta;
+  $('dropT').textContent=one?items[0].file.name:items.length+' video dipilih'; $('dropS').textContent='Ketuk untuk ganti pilihan';
+  $('iRes').textContent=one?m.w+'×'+m.h:'Beragam';
+  $('iDur').textContent=fmtTime(items.reduce((a,i)=>a+i.meta.d,0)); $('iSize').textContent=fmtSize(items.reduce((a,i)=>a+i.file.size,0));
+  $('tStart').value=0; $('tEnd').value=one?Math.floor(m.d*10)/10:''; $('tStart').disabled=$('tEnd').disabled=!one;
+  $('tNote').textContent=one?'':'Potong durasi hanya untuk satu video.';
+  $('info').classList.remove('hide'); buildRes(); resetResult();
 });
 
 function buildRes(){
   const box=$('resChips'); box.textContent='';
-  let opts=PRESETS.filter(h=>h<meta.h);
-  if(!opts.length) opts=[Math.max(144,Math.round(meta.h/2/2)*2)];
-  targetH=opts.includes(720)?720:opts[opts.length-1];
-  opts.forEach(h=>{
-    const b=document.createElement('button'); b.className='chip'; b.textContent=h+'p'; b.dataset.h=h;
-    b.setAttribute('aria-pressed',h===targetH); box.appendChild(b);
-  });
+  const maxH=Math.max(...items.map(i=>eff(i.meta).h));
+  let opts=PRESETS.filter(h=>h<maxH); if(!opts.length) opts=[Math.max(144,even(maxH/2))];
+  if(!opts.includes(targetH)) targetH=opts.includes(720)?720:opts[opts.length-1];
+  opts.forEach(h=>{const b=document.createElement('button'); b.className='chip'; b.textContent=h+'p'; b.dataset.h=h;
+    b.setAttribute('aria-pressed',h===targetH); box.appendChild(b);});
   $('setCard').style.cssText=''; $('go').disabled=false; updHint();
 }
-$('resChips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return;
-  targetH=+b.dataset.h; [...$('resChips').children].forEach(c=>c.setAttribute('aria-pressed',c===b)); updHint();});
-$('qChips').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return;
-  bpp=+b.dataset.q; [...$('qChips').children].forEach(c=>c.setAttribute('aria-pressed',c===b)); updHint();});
-function dims(){const H=Math.round(targetH/2)*2; const W=Math.round(meta.w/meta.h*H/2)*2; return {W,H}}
-function updHint(){const {W,H}=dims(); const br=Math.round(W*H*30*bpp/1000);
-  $('outHint').textContent='Hasil: '+W+'×'+H+' · ± '+br+' kbps · rasio gambar tetap terjaga.';}
-
+function plan(it){
+  const m=eff(it.meta), H=Math.min(even(targetH),even(m.h)), W=even(m.w/m.h*H), mute=$('mute').checked, abr=mute?0:128000;
+  let st=0,en=it.meta.d;
+  if(items.length===1){st=Math.min(Math.max(0,parseFloat($('tStart').value)||0),Math.max(0,en-0.5)); const e2=parseFloat($('tEnd').value); if(e2>st&&e2<=en) en=e2;}
+  const dur=en-st;
+  const vbr=targetMB?Math.max(100000,Math.floor(targetMB*1048576*8*0.93/dur-abr)):Math.max(150000,Math.round(W*H*fps*bpp));
+  return {W,H,fps,mute,abr,vbr,start:st,end:en,dur};
+}
+function updHint(){
+  if(!items.length) return; const ps=items.map(plan), p=ps[0];
+  const est=ps.reduce((a,x)=>a+(x.vbr+x.abr)*x.dur/8,0);
+  let t=items.length>1?'Hasil: '+items.length+' video · tinggi '+p.H+'p · '+p.fps+' fps · total perkiraan '+fmtSize(est)+'.':'Hasil: '+p.W+'×'+p.H+' · '+p.fps+' fps · ± '+Math.round(p.vbr/1000)+' kbps · perkiraan '+fmtSize(est)+' ('+fmtTime(p.dur)+').';
+  if(targetMB&&ps.some(x=>x.vbr/(x.W*x.H*x.fps)<0.03)) t+=' Target terlalu kecil untuk resolusi ini, gambar bisa buram. Pilih resolusi lebih rendah atau target lebih besar.';
+  else t+=' Rasio gambar tetap terjaga.';
+  $('outHint').textContent=t;
+}
 function pickMime(){
   const c=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
   return c.find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t))||'';
 }
-function resetResult(){$('resCard').classList.add('hide'); $('progCard').classList.add('hide'); outBlob=null;}
+function resetResult(){$('resCard').classList.add('hide'); $('progCard').classList.add('hide'); results=[];}
 
-$('go').addEventListener('click',async()=>{
-  if(!meta) return;
-  if(!window.MediaRecorder){alert('Browser ini belum mendukung konversi video.'); return;}
-  resetResult(); const {W,H}=dims(); const mime=pickMime();
-  const v=document.createElement('video'); v.playsInline=true; v.src=srcUrl; v.preload='auto';
+function runOne(it){ return new Promise(async resolve=>{
+  const p=plan(it), {W,H}=p, mime=pickMime();
+  const v=document.createElement('video'); v.playsInline=true; v.src=it.url; v.preload='auto';
   const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
-  const stream=cv.captureStream(30); let ac=null;
-  try{ ac=new (window.AudioContext||window.webkitAudioContext)(); await ac.resume();
+  const stream=cv.captureStream(p.fps); let ac=null;
+  if(!p.mute){ try{ ac=new (window.AudioContext||window.webkitAudioContext)(); await ac.resume();
     const s=ac.createMediaElementSource(v), d=ac.createMediaStreamDestination(); s.connect(d);
-    d.stream.getAudioTracks().forEach(t=>stream.addTrack(t)); }catch(_){}
-  const rec=new MediaRecorder(stream,{mimeType:mime||undefined,videoBitsPerSecond:Math.max(150000,Math.round(W*H*30*bpp)),audioBitsPerSecond:128000});
+    d.stream.getAudioTracks().forEach(t=>stream.addTrack(t)); }catch(_){} }
+  const rec=new MediaRecorder(stream,{mimeType:mime||undefined,videoBitsPerSecond:p.vbr,audioBitsPerSecond:128000});
   const chunks=[]; rec.ondataavailable=e=>{if(e.data.size) chunks.push(e.data)};
   let done=false,cancelled=false,wake=null;
   try{wake=await navigator.wakeLock?.request('screen')}catch(_){}
+  const end=()=>{ if(done) return; done=true; try{v.pause()}catch(_){} if(rec.state!=='inactive') rec.stop(); else resolve(null); };
   job={cancel(){cancelled=true; end();}};
-  const end=()=>{ if(done) return; done=true; try{v.pause()}catch(_){} if(rec.state!=='inactive') rec.stop(); };
   rec.onstop=()=>{
-    wake?.release?.().catch(()=>{}); ac?.close?.(); $('progCard').classList.add('hide'); $('go').disabled=false;
-    if(cancelled||!chunks.length) return;
-    const type=(mime||'video/webm').split(';')[0]; const ext=type.includes('mp4')?'mp4':'webm';
-    outBlob=new Blob(chunks,{type}); outName=file.name.replace(/\.[^.]+$/,'')+'_'+H+'p.'+ext; showResult(W,H,ext);
+    wake?.release?.().catch(()=>{}); ac?.close?.();
+    if(cancelled||!chunks.length) return resolve(null);
+    const type=(mime||'video/webm').split(';')[0], ext=type.includes('mp4')?'mp4':'webm';
+    resolve({blob:new Blob(chunks,{type}),name:it.file.name.replace(/\.[^.]+$/,'')+'_'+H+'p.'+ext,W,H,ext,orig:it.file.size});
   };
-  const tick=()=>{ if(done) return; ctx.drawImage(v,0,0,W,H);
-    const p=v.duration?Math.min(100,v.currentTime/v.duration*100):0;
-    $('fill').style.width=p+'%'; $('pTxt').textContent=Math.floor(p)+'%'; $('pTime').textContent=fmtTime(v.currentTime)+' / '+fmtTime(v.duration);
+  const tick=()=>{ if(done) return;
+    ctx.save(); ctx.translate(W/2,H/2); ctx.rotate(rot*Math.PI/180);
+    const dw=rot%180?H:W, dh=rot%180?W:H; ctx.drawImage(v,-dw/2,-dh/2,dw,dh); ctx.restore();
+    const el=v.currentTime-p.start; if(v.currentTime>=p.end){end(); return;}
+    const pc=Math.max(0,Math.min(100,el/p.dur*100));
+    $('fill').style.width=pc+'%'; $('pTxt').textContent=Math.floor(pc)+'%'; $('pTime').textContent=fmtTime(el)+' / '+fmtTime(p.dur);
     (v.requestVideoFrameCallback?v.requestVideoFrameCallback.bind(v):requestAnimationFrame)(tick); };
-  v.onended=end; v.onerror=()=>{cancelled=true; end(); alert('Gagal memutar video untuk diproses.');};
-  $('go').disabled=true; $('progCard').classList.remove('hide'); $('fill').style.width='0';
-  rec.start(1000);
-  try{ await v.play(); tick(); }catch(err){ cancelled=true; end(); alert('Browser memblokir pemutaran. Coba ketuk Konversi lagi.'); }
-});
-$('stop').addEventListener('click',()=>job&&job.cancel());
+  v.onended=end; v.onerror=()=>{cancelled=true; end();};
+  $('fill').style.width='0'; $('pTxt').textContent='0%';
+  try{
+    if(v.readyState<1) await once(v,'loadedmetadata');
+    if(p.start>0){ v.currentTime=p.start; await once(v,'seeked'); }
+    rec.start(1000); await v.play(); tick();
+  }catch(err){ cancelled=true; end(); }
+}); }
 
-function showResult(W,H,ext){
-  const pv=$('pv'); pv.src=URL.createObjectURL(outBlob);
-  const diff=Math.round((1-outBlob.size/file.size)*100);
-  const st=$('stats'); st.textContent='';
-  [W+'×'+H,fmtSize(outBlob.size),(diff>=0?'−'+diff+'%':'+'+(-diff)+'%')+' ukuran',ext.toUpperCase()].forEach(t=>{const s=document.createElement('span'); s.textContent=t; st.appendChild(s);});
+$('go').addEventListener('click',async()=>{
+  if(!items.length) return;
+  if(!window.MediaRecorder){alert('Browser ini belum mendukung konversi video.'); return;}
+  resetResult(); cancelAll=false; $('go').disabled=true; $('progCard').classList.remove('hide');
+  for(let i=0;i<items.length&&!cancelAll;i++){
+    $('pWho').textContent=items.length>1?'Video '+(i+1)+' dari '+items.length+': '+items[i].file.name:'';
+    const r=await runOne(items[i]); if(r) results.push(r);
+  }
+  $('progCard').classList.add('hide'); $('go').disabled=false;
+  if(results.length) showResults(); else if(!cancelAll) alert('Video gagal diproses. Coba ketuk Konversi lagi.');
+});
+$('stop').addEventListener('click',()=>{cancelAll=true; job&&job.cancel();});
+$('again').addEventListener('click',()=>$('file').click());
+
+function showResults(){
+  const one=results.length===1, st=$('stats'), list=$('list'); st.textContent=''; list.textContent='';
+  const tag=t=>{const s=document.createElement('span'); s.textContent=t; st.appendChild(s);};
+  $('pv').classList.toggle('hide',!one); $('save').classList.toggle('hide',!one); $('saveAll').classList.toggle('hide',one);
+  if(one){ const r=results[0], diff=Math.round((1-r.blob.size/r.orig)*100);
+    $('pv').src=URL.createObjectURL(r.blob); tag(r.W+'×'+r.H); tag(fmtSize(r.blob.size)); tag((diff>=0?'−'+diff+'%':'+'+(-diff)+'%')+' ukuran'); tag(r.ext.toUpperCase());
+  }else{ tag(results.length+' video selesai'); tag(fmtSize(results.reduce((a,r)=>a+r.blob.size,0))+' total');
+    results.forEach(r=>{const row=document.createElement('div'); row.className='li'; const sp=document.createElement('span'); sp.textContent=r.name+' · '+fmtSize(r.blob.size);
+      const b=document.createElement('button'); b.className='btn'; b.textContent='Simpan'; b.onclick=()=>saveOne(r); row.append(sp,b); list.appendChild(row);}); }
   $('msg').textContent=''; $('resCard').classList.remove('hide'); $('resCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
-$('save').addEventListener('click',async()=>{
+async function saveOne(r){
   const m=$('msg'); m.className='msg';
-  // 1) Di dalam claude.ai: pakai fitur downloads bawaan.
-  try{
-    if(typeof claude!=='undefined'){
-      const dl=await claude.use('downloads');
-      if(dl){ await dl.save({filename:outName,data:outBlob}); m.className='msg ok'; m.textContent='Tersimpan: '+outName; return; }
-    }
+  try{ // di claude.ai: pakai fitur downloads bawaan
+    if(typeof claude!=='undefined'){ const dl=await claude.use('downloads');
+      if(dl){ await dl.save({filename:r.name,data:r.blob}); m.className='msg ok'; m.textContent='Tersimpan: '+r.name; return; } }
   }catch(e){ if(e&&e.code==='declined') return; }
-  // 2) Di luar claude.ai (mis. GitHub Pages): unduh biasa lewat tautan.
-  const a=document.createElement('a'); a.href=URL.createObjectURL(outBlob); a.download=outName;
-  document.body.appendChild(a); a.click(); a.remove();
-  m.className='msg ok'; m.textContent='Mengunduh: '+outName;
-});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(r.blob); a.download=r.name; // di luar claude.ai (mis. GitHub Pages)
+  document.body.appendChild(a); a.click(); a.remove(); m.className='msg ok'; m.textContent='Mengunduh: '+r.name;
+}
+$('save').addEventListener('click',()=>results[0]&&saveOne(results[0]));
+$('saveAll').addEventListener('click',async()=>{for(const r of results){await saveOne(r); await new Promise(x=>setTimeout(x,400));}});
 </script>
 </body>
 </html>
